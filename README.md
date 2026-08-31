@@ -88,21 +88,19 @@ or new expenses. What stays unmatched is what your books are missing.
 calculates with, told to say when a case is genuinely borderline rather than
 manufacture confidence.
 
-**Which model** — the default is Claude Fable 5, the most capable option and the
-one that copes best with a creased receipt photographed at an angle. It is also
-the most expensive ($10/$50 per million input/output tokens), so Settings → AI
-assistance lets you drop to Opus 5, Sonnet 5 or Haiku 4.5 and shows the price of
-whichever you pick. Receipt scanning runs at low effort because transcription
+**Which model** — the default is Claude Opus 5. Settings → AI assistance also
+offers Fable 5 (more capable, twice the price, best on a creased receipt
+photographed at an angle), Sonnet 5 and Haiku 4.5, and shows the per-token price
+of whichever you pick. Receipt scanning runs at low effort because transcription
 does not need deep reasoning; the advisor runs at medium.
 
-Two Fable-specific details the code handles for you: thinking is always on and
-cannot be configured, so the request omits the parameter entirely rather than
-setting it; and Fable can decline a request outright — returning a successful
-response with `stop_reason: "refusal"` rather than raising — so server-side
-refusal fallbacks are enabled, and a scan rescued by the fallback model is
-flagged for a closer look. Fable is not available to organisations configured
-for zero data retention; if scans come back rejected, that is the likely reason
-and Opus 5 has no such requirement.
+Two details the code handles for you on the Opus/Fable tier: `thinking` is
+omitted rather than configured (Fable rejects any explicit setting), and both
+models can decline a request outright — a successful response with
+`stop_reason: "refusal"` rather than an error — so server-side refusal fallbacks
+are enabled and a scan rescued by the fallback model is flagged for a closer
+look. Fable additionally requires standard data retention; the settings page
+says so when you select it.
 
 ## Where your data lives
 

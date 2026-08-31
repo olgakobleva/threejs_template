@@ -3,7 +3,7 @@
  * name a default model without pulling the Anthropic client into the bundle.
  */
 
-export const DEFAULT_MODEL = 'claude-fable-5';
+export const DEFAULT_MODEL = 'claude-opus-5';
 
 /**
  * Cost per million tokens, used to show what a scan actually cost. Fable 5 sits
@@ -20,12 +20,12 @@ export const PRICE_PER_MTOK: Record<string, { input: number; output: number }> =
 
 export const SELECTABLE_MODELS = [
 	{
-		id: 'claude-fable-5',
-		label: 'Claude Fable 5 — most capable, best on bad photos and odd layouts',
+		id: 'claude-opus-5',
+		label: 'Claude Opus 5 — very accurate; the default',
 	},
 	{
-		id: 'claude-opus-5',
-		label: 'Claude Opus 5 — very accurate, half the price of Fable',
+		id: 'claude-fable-5',
+		label: 'Claude Fable 5 — most capable, at twice the price of Opus',
 	},
 	{
 		id: 'claude-sonnet-5',
