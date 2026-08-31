@@ -1,5 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { AiSettings } from '@/domain/types';
+import { modelSupportsRefusalFallback } from './models';
+
+export {
+	DEFAULT_MODEL,
+	PRICE_PER_MTOK,
+	SELECTABLE_MODELS,
+	estimatedCostUsd,
+	modelRequiresDataRetention,
+} from './models';
 
 /**
  * The Claude client, constructed per call from the key in Settings.
@@ -38,6 +47,47 @@ export function createClient(settings: AiSettings): Anthropic {
 	});
 }
 
+// ---------------------------------------------------------------------------
+// Refusal fallbacks
+// ---------------------------------------------------------------------------
+
+const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
+
+/**
+ * Fable 5 and Opus 5 can decline a request outright: the call returns HTTP 200
+ * with `stop_reason: "refusal"` rather than raising. Opting into server-side
+ * fallbacks means the API silently re-runs the same request on another model
+ * inside the same call, so a stray refusal on a perfectly ordinary receipt does
+ * not turn into a dead end for the user.
+ *
+ * `fallbacks: 'default'` lets the server pick the target by refusal category,
+ * so there is no model list here to go stale. A decline before any output is
+ * not billed; the rescue bills at the fallback model's own rates.
+ */
+export function refusalFallbackParams(model: string): {
+	betas?: Anthropic.Beta.AnthropicBeta[];
+	fallbacks?: 'default';
+} {
+	if (!modelSupportsRefusalFallback(model)) return {};
+	return { betas: [FALLBACK_BETA], fallbacks: 'default' };
+}
+
+/** Did a fallback model end up serving this response? */
+export function servedByFallback(usage: {
+	iterations?: Array<{ type: string }> | null;
+}): boolean {
+	return (usage.iterations ?? []).some(
+		(entry) => entry.type === 'fallback_message',
+	);
+}
+
+export const REFUSAL_MESSAGE =
+	'Claude declined to handle this one, and the fallback model did too. That is unusual for a receipt — if the document is ordinary, try again; otherwise fill the fields in by hand.';
+
+// ---------------------------------------------------------------------------
+// Errors
+// ---------------------------------------------------------------------------
+
 /** Turn an SDK failure into something worth showing a person. */
 export function describeAiError(cause: unknown): string {
 	if (cause instanceof AiNotConfiguredError) return cause.message;
@@ -49,6 +99,8 @@ export function describeAiError(cause: unknown): string {
 		return 'Rate limited by the API. Wait a moment and try again.';
 	}
 	if (cause instanceof Anthropic.BadRequestError) {
+		// The most likely cause here is an org configured for zero data
+		// retention, which Fable 5 is not available under.
 		return `The request was rejected: ${cause.message}`;
 	}
 	if (cause instanceof Anthropic.APIConnectionError) {
@@ -61,28 +113,3 @@ export function describeAiError(cause: unknown): string {
 		? cause.message
 		: 'Something went wrong talking to Claude.';
 }
-
-/**
- * Rough cost estimate so the app can tell you what a scan costs before it runs.
- * Opus 5 pricing; adjust if you switch models.
- */
-export const PRICE_PER_MTOK = {
-	'claude-opus-5': { input: 5, output: 25 },
-	'claude-sonnet-5': { input: 2, output: 10 },
-	'claude-haiku-4-5': { input: 1, output: 5 },
-} as const;
-
-export const SELECTABLE_MODELS = [
-	{
-		id: 'claude-opus-5',
-		label: 'Claude Opus 5 — most accurate, best on messy receipts',
-	},
-	{
-		id: 'claude-sonnet-5',
-		label: 'Claude Sonnet 5 — cheaper, good on clean receipts',
-	},
-	{
-		id: 'claude-haiku-4-5',
-		label: 'Claude Haiku 4.5 — cheapest, for bulk clean scans',
-	},
-] as const;

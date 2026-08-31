@@ -10,7 +10,7 @@ import { formatMoney } from '@/core/money';
 import { formatDate } from '@/core/dates';
 import { expenseTotals } from '@/tax/nl/vat';
 import { reviewExpense } from '@/tax/nl/deductibility';
-import { createClient } from './client';
+import { createClient, refusalFallbackParams } from './client';
 
 /**
  * The deduction advisor.
@@ -144,6 +144,9 @@ export interface AdvisorRequest {
 /**
  * Streams an answer. `onDelta` receives text as it arrives; the promise
  * resolves with the complete answer.
+ *
+ * Streaming is not a nicety here: Fable 5 thinks before it answers and a hard
+ * question can sit silent for a while, so the user needs to see tokens land.
  */
 export async function askAdvisor(
 	request: AdvisorRequest,
@@ -160,7 +163,7 @@ export async function askAdvisor(
 	];
 	if (request.expenseContext) contextBlocks.push(request.expenseContext);
 
-	const messages: Anthropic.MessageParam[] = [
+	const messages: Anthropic.Beta.BetaMessageParam[] = [
 		...request.history.map((message) => ({
 			role: message.role,
 			content: message.content,
@@ -168,7 +171,7 @@ export async function askAdvisor(
 		{ role: 'user' as const, content: request.question },
 	];
 
-	const stream = client.messages.stream(
+	const stream = client.beta.messages.stream(
 		{
 			model: request.aiSettings.model,
 			max_tokens: 4000,
@@ -183,6 +186,7 @@ export async function askAdvisor(
 				},
 			],
 			output_config: { effort: 'medium' },
+			...refusalFallbackParams(request.aiSettings.model),
 			messages,
 		},
 		{ signal },
@@ -193,11 +197,14 @@ export async function askAdvisor(
 	const final = await stream.finalMessage();
 
 	if (final.stop_reason === 'refusal') {
-		return 'Claude declined to answer that one. Rephrase the question, or ask a bookkeeper.';
+		return 'Claude declined to answer that one, and so did the fallback model. Rephrase the question, or ask a bookkeeper.';
 	}
 
 	return final.content
-		.filter((block): block is Anthropic.TextBlock => block.type === 'text')
+		.filter(
+			(block): block is Anthropic.Beta.BetaTextBlock =>
+				block.type === 'text',
+		)
 		.map((block) => block.text)
 		.join('');
 }

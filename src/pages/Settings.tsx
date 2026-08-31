@@ -11,7 +11,11 @@ import { today, toISODate, yearOf } from '@/core/dates';
 import { downloadFile } from '@/core/csv';
 import { formatMoney } from '@/core/money';
 import { AVAILABLE_TAX_YEARS, taxYearParameters } from '@/tax/nl/years';
-import { SELECTABLE_MODELS } from '@/ai/client';
+import {
+	SELECTABLE_MODELS,
+	PRICE_PER_MTOK,
+	modelRequiresDataRetention,
+} from '@/ai/client';
 import {
 	Badge,
 	Banner,
@@ -469,6 +473,7 @@ function InvoicingTab({ working, update }: TabProps): JSX.Element {
 function AiTab({ working, update }: TabProps): JSX.Element {
 	const ai = working.ai;
 	const [reveal, setReveal] = useState(false);
+	const price = PRICE_PER_MTOK[ai.model];
 
 	function set(patch: Partial<Settings['ai']>): void {
 		update({ ai: { ...ai, ...patch } });
@@ -522,7 +527,24 @@ function AiTab({ working, update }: TabProps): JSX.Element {
 						value: model.id,
 						label: model.label,
 					}))}
+					hint={
+						price
+							? `${price.input}/${price.output} US dollars per million input/output tokens. A typical receipt scan is a few thousand tokens.`
+							: undefined
+					}
 				/>
+
+				{modelRequiresDataRetention(ai.model) ? (
+					<Banner
+						tone="info"
+						title="Fable 5 needs standard data retention"
+					>
+						It is not offered to organisations configured for zero
+						data retention. If scans come back rejected with a 400,
+						that is the likely reason — switch to Opus 5, which has
+						no such requirement.
+					</Banner>
+				) : null}
 			</Card>
 
 			<Banner

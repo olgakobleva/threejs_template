@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import type Anthropic from '@anthropic-ai/sdk';
 import type {
 	AiSettings,
@@ -13,7 +13,13 @@ import { blobToDataUrl, base64Payload } from '@/storage/IdbDataStore';
 import { isValidISODate, today } from '@/core/dates';
 import { roundCents, splitGross } from '@/core/money';
 import { suggestCategory } from '@/tax/nl/deductibility';
-import { createClient } from './client';
+import {
+	createClient,
+	estimatedCostUsd,
+	refusalFallbackParams,
+	REFUSAL_MESSAGE,
+	servedByFallback,
+} from './client';
 
 /**
  * Receipt scanning: a photo or PDF in, a filled-in expense out.
@@ -141,35 +147,43 @@ export interface ScanResult {
 	expense: Expense;
 	/** Model-reported plus locally-derived problems. */
 	warnings: string[];
-	usage: { inputTokens: number; outputTokens: number };
+	usage: {
+		inputTokens: number;
+		outputTokens: number;
+		estimatedCostUsd: number;
+	};
 }
 
 function documentBlock(
 	dataUrl: string,
 	mimeType: string,
-): Anthropic.MessageParam['content'] extends Array<infer B> ? B : never {
+): Anthropic.Beta.BetaContentBlockParam {
 	const data = base64Payload(dataUrl);
 
 	if (mimeType === 'application/pdf') {
 		return {
 			type: 'document',
 			source: { type: 'base64', media_type: 'application/pdf', data },
-		} as never;
+		};
 	}
 
-	const mediaType = [
+	const supported = [
 		'image/png',
 		'image/jpeg',
 		'image/gif',
 		'image/webp',
-	].includes(mimeType)
-		? mimeType
+	] as const;
+	type SupportedImage = (typeof supported)[number];
+	const mediaType: SupportedImage = (supported as readonly string[]).includes(
+		mimeType,
+	)
+		? (mimeType as SupportedImage)
 		: 'image/jpeg';
 
 	return {
 		type: 'image',
-		source: { type: 'base64', media_type: mediaType as 'image/jpeg', data },
-	} as never;
+		source: { type: 'base64', media_type: mediaType, data },
+	};
 }
 
 export async function scanReceipt(
@@ -181,14 +195,20 @@ export async function scanReceipt(
 	const client = createClient(aiSettings);
 	const dataUrl = await blobToDataUrl(file);
 
-	const response = await client.messages.parse({
+	// `thinking` is deliberately omitted rather than configured. Fable 5 thinks
+	// unconditionally and rejects any explicit setting; the other selectable
+	// models are fine with the default. Depth is steered with `effort` instead,
+	// and transcription is the kind of task where "low" is genuinely enough —
+	// on Fable it still beats older models working much harder.
+	const response = await client.beta.messages.parse({
 		model: aiSettings.model,
 		max_tokens: 4000,
 		system: systemPrompt(categories),
 		output_config: {
-			effort: 'medium',
-			format: zodOutputFormat(ReceiptSchema),
+			effort: 'low',
+			format: betaZodOutputFormat(ReceiptSchema),
 		},
+		...refusalFallbackParams(aiSettings.model),
 		messages: [
 			{
 				role: 'user',
@@ -203,6 +223,12 @@ export async function scanReceipt(
 		],
 	});
 
+	// A refusal comes back as a successful response, not an exception, so it has
+	// to be checked before reading the content.
+	if (response.stop_reason === 'refusal') {
+		throw new Error(REFUSAL_MESSAGE);
+	}
+
 	const extraction = response.parsed_output;
 	if (!extraction) {
 		throw new Error(
@@ -212,6 +238,12 @@ export async function scanReceipt(
 
 	const { expense, warnings } = toExpense(extraction, categories);
 
+	if (servedByFallback(response.usage)) {
+		warnings.push(
+			'The selected model declined this document and a fallback model read it instead. The figures are worth a closer look than usual.',
+		);
+	}
+
 	return {
 		extraction,
 		expense,
@@ -219,6 +251,11 @@ export async function scanReceipt(
 		usage: {
 			inputTokens: response.usage.input_tokens,
 			outputTokens: response.usage.output_tokens,
+			estimatedCostUsd: estimatedCostUsd(
+				response.model ?? aiSettings.model,
+				response.usage.input_tokens,
+				response.usage.output_tokens,
+			),
 		},
 	};
 }

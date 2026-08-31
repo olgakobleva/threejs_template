@@ -1,4 +1,5 @@
 import { newId, nowTimestamp } from '@/core/id';
+import { DEFAULT_MODEL } from '@/ai/models';
 import { addDays, today, yearOf } from '@/core/dates';
 import type {
 	Address,
@@ -61,7 +62,7 @@ export function defaultSettings(): Settings {
 		ai: {
 			enabled: false,
 			apiKey: '',
-			model: 'claude-opus-5',
+			model: DEFAULT_MODEL,
 			confirmBeforeCalls: true,
 		},
 		taxYearOverrides: {},
