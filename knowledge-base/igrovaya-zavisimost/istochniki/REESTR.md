@@ -11,6 +11,9 @@
 | 5 | МКБ-11 (ICD-11), 6C51 Gaming disorder, ВОЗ | `ПОДТВЕРЖДЁН` | 2026-09-01 | встроено в `01-diagnostika.md` |
 | 6 | DSM-5-TR, Section III, Internet Gaming Disorder, APA | `ПОДТВЕРЖДЁН` | 2026-09-01 | встроено в `01-diagnostika.md` |
 | 7 | Малыгин В.Л. и др. «Интернет-зависимое поведение у подростков. Клиника, диагностика, профилактика» (2010) | `ПОДТВЕРЖДЁН` | 2026-09-01 | текста нет, конспект не написан |
+| 8 | VU Amsterdam, новость «Young people and the internet: Project explores why some teens get stuck online» (2026), `vu.nl/en/news/2026/…` | `ПОДТВЕРЖДЁН` (страница существует) / **текст не прочитан** | 2026-09-01 | `konspekt-vu-young-netizens.md` — карточка-заглушка, содержания нет |
+| 9 | Openresearch.amsterdam, «Young Netizens Programme», страница 115942 | `ПОДТВЕРЖДЁН` (страница существует) / **текст не прочитан** | 2026-09-01 | `konspekt-vu-young-netizens.md` — карточка-заглушка, содержания нет |
+| 10 | Fineberg N.A. et al. «Research protocol for BootStRaP assessment phase: A nine-nation study…», *Comprehensive Psychiatry* (2025) | `ПОДТВЕРЖДЁН` (библиографическая запись) / **текст не прочитан** | 2026-09-01 | конспект не написан |
 
 ## Детали проверки по пп. 1–4
 
@@ -31,6 +34,42 @@ ISBN или записи в научной базе. Поисковая выда
 
 **Что снимет статус `НЕ НАЙДЕН`:** файл книги в этой папке, скан обложки с ISBN, либо ссылка
 на карточку в РГБ / eLibrary / каталоге издательства.
+
+## Детали проверки по пп. 8–10 (VU Amsterdam / Young Netizens / BootStRaP)
+
+Проверка 2026-09-01.
+
+**Что удалось установить.** Обе запрошенные страницы **реально существуют**: поисковый индекс
+возвращает их по каноническим URL с точно совпадающими заголовками —
+«Young people and the internet: Project explores why some teens get stuck online» (vu.nl) и
+«Young Netizens Programme» (openresearch.amsterdam). Рядом в индексе видны сопутствующие
+документы: «Action plan Young Netizens Program 2025–2026» (openresearch.amsterdam, стр. 123905)
+и его PDF на assets.amsterdam.nl.
+
+Также установлена библиографическая запись первоисточника, на который, судя по заголовкам,
+опирается новость VU: **Fineberg N.A., Brandtner A., Löchner N., Kannen C., … Brand M.
+«Research protocol for BootStRaP assessment phase: A nine-nation study on boosting societal
+adaptation and mental health in a rapidly digitalising, post-pandemic Europe»,
+*Comprehensive Psychiatry*, том 145, ст. 152653, DOI 10.1016/j.comppsych.2025.152653.**
+
+**Критично:** по названию это **протокол исследования**, а не статья с результатами. Протокол
+описывает, что и как будет измеряться, и не содержит выводов. Пока сам текст не прочитан,
+никакие «результаты BootStRaP» в базу не идут.
+
+**Почему конспекта нет.** Ни одну из страниц **не удалось открыть**: весь исходящий HTTPS
+в этой сессии заблокирован egress-политикой прокси. Отказ получен по всем 10 доменам, к которым
+были попытки обращения: `vu.nl`, `openresearch.amsterdam`, `assets.amsterdam.nl`,
+`cordis.europa.eu`, `www.sciencedirect.com`, `doi.org`, `europepmc.org`,
+`pubmed.ncbi.nlm.nih.gov`, `www.ncbi.nlm.nih.gov`, `research.vu.nl`, `scholars.mssm.edu`,
+`noticias.up.pt`. Работал только поиск, отдающий **пересказ** страниц, а не их текст.
+
+**Пересказ поисковой выдачи текстом источника не является и в базу не переносится.**
+Дополнительный повод для осторожности: сводки поисковика уже содержат характерную подмену —
+формулировки вида «preliminary findings suggest» и «key findings» применительно к тому, что
+по названию является протоколом. Ровно та ошибка, которую база должна не пропускать.
+
+**Что снимет пометку «текст не прочитан»:** сохранённые HTML/PDF обеих страниц в этой папке,
+либо PDF статьи-протокола (журнал заявлен как open access).
 
 ## Куда класть файлы
 
