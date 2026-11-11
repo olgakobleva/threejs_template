@@ -97,7 +97,7 @@ export function App(): JSX.Element {
 		<div className="app">
 			<nav className="sidebar">
 				<div className="sidebar__brand">
-					<strong>Ledgerly</strong>
+					<strong>Qwartal</strong>
 					<span>NL · ZZP</span>
 				</div>
 

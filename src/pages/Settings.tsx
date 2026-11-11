@@ -834,7 +834,7 @@ function DataTab(): JSX.Element {
 		try {
 			const snapshot = await store.exportSnapshot();
 			downloadFile(
-				`ledgerly-backup-${toISODate(new Date())}.json`,
+				`qwartal-backup-${toISODate(new Date())}.json`,
 				JSON.stringify(snapshot, null, 2),
 				'application/json',
 			);
@@ -850,7 +850,7 @@ function DataTab(): JSX.Element {
 			const snapshot = JSON.parse(await file.text()) as DatabaseSnapshot;
 			if (!snapshot.settings || !Array.isArray(snapshot.invoices)) {
 				throw new Error(
-					'That file does not look like a Ledgerly backup.',
+					'That file does not look like a Qwartal backup.',
 				);
 			}
 			await store.importSnapshot(snapshot);

@@ -1,4 +1,4 @@
-# Ledgerly
+# Qwartal
 
 Bookkeeping for a Dutch sole trader (ZZP / eenmanszaak), in English.
 

@@ -15,7 +15,7 @@ import {
 	type DataStore,
 } from './DataStore';
 
-const DB_NAME = 'ledgerly';
+const DB_NAME = 'qwartal';
 
 const COLLECTIONS: CollectionName[] = [
 	'contacts',
